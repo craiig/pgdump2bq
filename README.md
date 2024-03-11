@@ -1,5 +1,5 @@
 
-# Basic instructions for loading postgres dump and export to csv
+# Basic instructions for loading postgres dump and create the best possible export for import into bigquery
 
 ## 1. Install Postgresql with PostGIS extensions
 TODO find good link, this is beyond the scope of these instructions
@@ -36,6 +36,11 @@ CREATE EXTENSION if not exists postgis with schema shared_extensions;
 ## 4. Import Dump
 ```
 pg_restore -v -c -O --if-exists -d dump_import -h localhost -p 1234 path/to/dumpfile
+```
+
+### Maybe - Modify hstore columns in dump to json
+```
+alter table nbuild_onecity.signups alter column custom_values type jsonb using shared_extensions.hstore_to_jsonb(custom_values);
 ```
 
 ## 5. Turn all tables into CSV files
@@ -78,6 +83,11 @@ $$ LANGUAGE plpgsql;
 1. Execute: `SELECT db_to_csv('/absolute/destination/path');`
 
 1. All the dumped files should be in the expected spot!
+
+## Export to Parquet
+```
+ogr2ogr -f Parquet test.parquet PG:"host=localhost port=1234 dbname=dump_import" -sql "select * from nbuild_onecity.signups"
+```
 
 # Future work
 * Turn this into a program/script.
