@@ -1,5 +1,5 @@
 [project]
-name = "pgdump2csv"
+name = "pgdump2bq"
 version = "0.1.0"
 description = "Add your description here"
 authors = [
@@ -24,4 +24,4 @@ dev-dependencies = []
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/pgdump2csv"]
+packages = ["src/pgdump2bq"]

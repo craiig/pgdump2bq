@@ -1,6 +1,6 @@
 import logging
 
-from pgdump2csv.postgres import connect_database
+from .postgres import connect_database
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +25,15 @@ def convert_hstore_to_jsonb():
 
         for row in cur.fetchall():
             table_schema, table_name, column_name = row
-            logger.info(f"fixing column {column_name} in table {table_name}")
+            logger.info(
+                f"converting column {column_name} in table {table_name} from hstore to jsonb"
+            )
             query = f"""
                 ALTER TABLE "{table_schema}"."{table_name}" ALTER COLUMN {column_name} TYPE jsonb USING shared_extensions.hstore_to_jsonb({column_name});
                 """
             logger.debug(query)
             cur.execute(query)
-            logger.info(f"fixed table {table_schema}.{table_name}")
+            logger.info(f"done converting {table_schema}.{table_name}")
 
     conn.commit()
     conn.close()

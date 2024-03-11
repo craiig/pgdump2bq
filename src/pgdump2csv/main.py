@@ -58,9 +58,11 @@ def main():
 
     logger.info("Done export")
     if args.debug:
-        logger.info("Press CTRL+D to close postgresql and exit")
+        logger.info("Press CTRL+D or CTRL+C to close postgresql and exit")
         while True:
-            sys.stdin.readline()
+            l = sys.stdin.readline()
+            if not l:
+                break
 
 
 if __name__ == "__main__":

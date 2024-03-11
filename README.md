@@ -1,5 +1,5 @@
 
-# Basic instructions for loading postgres dump and create the best possible export for import into bigquery
+# Basic manual instructions for loading postgres dump and create the best possible export for import into bigquery
 
 ## 1. Install Postgresql with PostGIS extensions
 TODO find good link, this is beyond the scope of these instructions
