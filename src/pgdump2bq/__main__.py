@@ -15,8 +15,9 @@ def setup_logging():
 
     logging.basicConfig(
         level=logging.INFO,
-        # improve formatting
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        # display isoformat time, log level, module, line number, message
+        format="%(asctime)s - %(levelname)s - %(name)s:%(lineno)s - %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S%z",
     )
 
 

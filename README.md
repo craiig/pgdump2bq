@@ -1,21 +1,83 @@
+# pgdump2bq
 
-# Basic manual instructions for loading postgres dump and create the best possible export for import into bigquery
+This tool converts a PostgreSQL dump file to a series of files that are suitable for import into Google BigQuery.
 
-## 1. Install Postgresql with PostGIS extensions
+There are several other tools designed for exporting PostgreSQL to a given format, but this tool differs from them in a few key ways:
+1. This tool creates a temporary PostgreSQL database from a pgdump file and then extract the data. This differs from 
+   other tools which require you to perform this step manually into an existing PostgreSQL database.
+2. Instead of targretting a specific format, this tool is optimized to generate files specifically for importing into BigQuery.
+
+These are notable because:
+* #1 means we can to modify tables/columns inside PostgreSQL before exporting, taking advantage of PostgreSQL's own tools/performance. 
+* #2 means the output format of this tool may change over time. Currently it outputs Parquet, but as BigQuery evolves, this tool can too.
+
+For instance, we convert `hstore` type fields to `json` before export. More such conversion may be done in the future.
+
+This tool is written in python, but it avoids being on the datapath of most operations. It calls out to PostgreSQL and gdal/ogr2ogr to import and export.
+
+## Installing
+Requirements:
+* A PostgreSQL installation on the path. Including `initdb`, `postgres`, and `psql`.
+* GDAL 3.8.4 (for `ogr2ogr`)
+* Rye - https://rye-up.com/
+
+```
+git clone ...
+
+```
+
+## Basic Usage
+
+```
+usage: main.py [-h] [--sql-before-import SQL_BEFORE_IMPORT] --pgdump PGDUMP --output-directory OUTPUT_DIRECTORY [--debug]
+
+Fixes a pgdump file for import
+
+options:
+  -h, --help            show this help message and exit
+  --sql-before-import SQL_BEFORE_IMPORT
+                        The file to execute before the pgdump is imported
+  --pgdump PGDUMP       The pgdump file to import
+  --output-directory OUTPUT_DIRECTORY
+                        The directory to write the output files
+  --debug               Keep running to enable debugging by connecting to the PostgreSQL database
+```
+
+Example:
+```
+% python -m pgdump2bq --sql-before-import config.sql --pgdump file.pgdump --output-directory testoutput
+```
+
+
+## Development: 
+
+This project was created with rye - https://rye-up.com/
+
+Check out this repo, and run `rye sync` to initialze the virtualenv.
+
+Consider the code in this repo to be hobbyist level, at best. :) 
+
+
+# Manual Instructions
+Basic manual instructions for loading postgres dump and create the best possible export for import into bigquery
+This tool was developed to solve a specific problem, the manual steps to perform the same operations are described here for posterity.
+
+
+### 1. Install PostgreSQL with PostGIS extensions
 TODO find good link, this is beyond the scope of these instructions
 
 If you're on MacOS, try homebrew.
 
-## 2. Create database
+### 2. Create database
 1. Create database in test directory: `initdb -d test`
-1. Run postgresql server on port 1234: `postgres -D test -p 1234`
+1. Run PostgreSQL server on port 1234: `postgres -D test -p 1234`
 1. Connect to database `psql -h localhost -p 1234 -d postgres`
 1. Create the database to import into: `create database dump_import;`
 
 
-## 3. Configure dump-specific prerequisities:
+### 3. Configure dump-specific prerequisities:
 
-### For NationBuilder
+#### For NationBuilder
 This is focused on importing NationBuilder dumps.
 
 We need to configure `shared_extensions` like the NationBuilder dump expects:
@@ -33,17 +95,23 @@ CREATE EXTENSION if not exists pg_trgm WITH schema shared_extensions;
 CREATE EXTENSION if not exists postgis with schema shared_extensions;
 ```
 
-## 4. Import Dump
+### 4. Import Dump
 ```
 pg_restore -v -c -O --if-exists -d dump_import -h localhost -p 1234 path/to/dumpfile
 ```
 
-### Maybe - Modify hstore columns in dump to json
+#### Modify hstore columns in dump to json
+hstore is not a format that BigQuery supports, so it is better to turn these fields into json.
 ```
-alter table nbuild_onecity.signups alter column custom_values type jsonb using shared_extensions.hstore_to_jsonb(custom_values);
+alter table schema.table alter column custom_values type jsonb using shared_extensions.hstore_to_jsonb(custom_values);
 ```
 
-## 5. Turn all tables into CSV files
+### 5. Export to Parquet
+```
+ogr2ogr -f Parquet test.parquet PG:"host=localhost port=1234 dbname=dump_import" -sql "select * from schema.table"
+```
+
+### 5. Alternate: Turn all tables into CSV files
 
 Caveat - this works but it does not preserve the field types - so importing 
 this into another databse may be tricky.
@@ -83,15 +151,3 @@ $$ LANGUAGE plpgsql;
 1. Execute: `SELECT db_to_csv('/absolute/destination/path');`
 
 1. All the dumped files should be in the expected spot!
-
-## Export to Parquet
-```
-ogr2ogr -f Parquet test.parquet PG:"host=localhost port=1234 dbname=dump_import" -sql "select * from nbuild_onecity.signups"
-```
-
-# Future work
-* Turn this into a program/script.
-	* Given a pg_dump file with name PGDUMPFILE
-	* Creates CSV in directory structure: PGDUMPFILE/schema/table.csv
-
-* Investigate file formats for output that would preserve types, i.e. parquet
