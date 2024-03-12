@@ -22,6 +22,7 @@ def setup_logging():
 
 
 def main():
+    setup_logging()
     parser = argparse.ArgumentParser(description="Fixes a pgdump file for import")
     parser.add_argument(
         "--sql-before-import", help="The file to execute before the pgdump is imported"
@@ -67,5 +68,4 @@ def main():
 
 
 if __name__ == "__main__":
-    setup_logging()
     main()
