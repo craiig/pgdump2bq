@@ -3,15 +3,15 @@
 This tool converts a PostgreSQL dump file to a series of files that are suitable for import into Google BigQuery.
 
 There are several other tools designed for exporting PostgreSQL to a given format, but this tool differs from them in a few key ways:
-1. This tool creates a temporary PostgreSQL database from a pgdump file and then extract the data. This differs from 
+1. This tool creates a temporary PostgreSQL database from a pgdump file and then extracts the data. This differs from 
    other tools which require you to perform this step manually into an existing PostgreSQL database.
-2. Instead of targretting a specific format, this tool is optimized to generate files specifically for importing into BigQuery.
+2. Instead of targetting a specific format, this tool is optimized to generate files specifically for importing into BigQuery.
 
 These are notable because:
 * #1 means we can to modify tables/columns inside PostgreSQL before exporting, taking advantage of PostgreSQL's own tools/performance. 
 * #2 means the output format of this tool may change over time. Currently it outputs Parquet, but as BigQuery evolves, this tool can too.
 
-For instance, we convert `hstore` type fields to `json` before export. More such conversion may be done in the future.
+For instance, `hstore` type fields are converted to `json` before export. More such conversion may be done in the future.
 
 This tool is written in python, but it avoids being on the datapath of most operations. It calls out to PostgreSQL and gdal/ogr2ogr to import and export.
 
@@ -23,7 +23,7 @@ Requirements:
 
 ```
 git clone ...
-
+rye sync
 ```
 
 ## Basic Usage
