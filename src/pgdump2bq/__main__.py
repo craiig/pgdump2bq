@@ -4,7 +4,7 @@ import os
 import sys
 
 from .dump_all_tables import dump_all_tables
-from .fix_table_schema import add_json_column_for_yaml, convert_hstore_to_jsonb
+from .fix_table_schema import convert_hstore_to_jsonb, fix_all_yaml_columns
 from .postgres import pg_restore, run_sql_file, temp_postgresql_db
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ def main():
                 raise
 
             try:
-                add_json_column_for_yaml("nbuild_onecity", "activity_datas", "content")
+                fix_all_yaml_columns("activity_datas", "content")
             except Exception:
                 logger.exception(
                     "something went wrong while converting yaml to json column"

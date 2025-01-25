@@ -45,9 +45,10 @@ def add_json_column_for_yaml(schema, table, column_name):
     conn = connect_database()
     with conn.cursor() as cur:
         logger.info(
-            f"converting column {column_name} in table {table} from yaml to json"
+            f"converting column {column_name} in {schema}.{table} from yaml to json"
         )
         query = f"""
+            ALTER TABLE "{schema}"."{table}" DROP COLUMN IF EXISTS {column_name}_json;
             ALTER TABLE "{schema}"."{table}" ADD COLUMN {column_name}_json jsonb;
             UPDATE "{schema}"."{table}" SET {column_name}_json = plv8_yaml_to_json({column_name});
             """
@@ -57,3 +58,21 @@ def add_json_column_for_yaml(schema, table, column_name):
 
     conn.commit()
     conn.close()
+
+
+def fix_all_yaml_columns(table, column_name):
+    # iterate over all schemas that start with nbuild_ and call add_json_column_for_yaml
+    conn = connect_database()
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT schema_name
+            FROM information_schema.schemata
+            WHERE 
+            schema_name LIKE 'nbuild_%'
+            """
+        )
+
+        for row in cur.fetchall():
+            schema = row[0]
+            add_json_column_for_yaml(schema, table, column_name)
