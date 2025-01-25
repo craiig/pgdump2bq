@@ -28,11 +28,12 @@ def connect_database(dbname=target_database_name):
 def run_sql_file(filename: str):
     logger.info(f"running {filename}")
     run_command(
-        f"psql -h localhost -p {server_port} -d {target_database_name} -f {filename}"
+        f"psql -h localhost -p {server_port} -d {target_database_name} -f {filename} -v ON_ERROR_STOP=on"
     )
 
 
 def pg_restore(dump_file: str):
+    run_command("pg_restore --version")
     run_command(
         f"pg_restore -v -c -O --if-exists -d {target_database_name} -h localhost "
         f"-p {server_port} {dump_file}"

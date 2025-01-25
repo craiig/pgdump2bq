@@ -26,6 +26,18 @@ git clone ...
 rye sync
 ```
 
+## PostgreSQL Dependencies
+* PostGIS
+* plv8 (for yaml to json translation)
+
+```
+brew install postgis
+# for plv8
+brew install v8
+pip install pgxnclient
+pgxnclient install plv8
+```
+
 ## Basic Usage
 
 ```

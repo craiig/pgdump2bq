@@ -37,3 +37,23 @@ def convert_hstore_to_jsonb():
 
     conn.commit()
     conn.close()
+
+
+def add_json_column_for_yaml(schema, table, column_name):
+    """use plv8_yaml_to_json UDF to convert given column to "column_name_json" """
+
+    conn = connect_database()
+    with conn.cursor() as cur:
+        logger.info(
+            f"converting column {column_name} in table {table} from yaml to json"
+        )
+        query = f"""
+            ALTER TABLE "{schema}"."{table}" ADD COLUMN {column_name}_json jsonb;
+            UPDATE "{schema}"."{table}" SET {column_name}_json = plv8_yaml_to_json({column_name});
+            """
+        logger.debug(query)
+        cur.execute(query)
+        logger.info(f"done converting {schema}.{table}")
+
+    conn.commit()
+    conn.close()

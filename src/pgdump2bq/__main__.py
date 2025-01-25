@@ -4,7 +4,7 @@ import os
 import sys
 
 from .dump_all_tables import dump_all_tables
-from .fix_table_schema import convert_hstore_to_jsonb
+from .fix_table_schema import add_json_column_for_yaml, convert_hstore_to_jsonb
 from .postgres import pg_restore, run_sql_file, temp_postgresql_db
 
 logger = logging.getLogger(__name__)
@@ -13,8 +13,9 @@ logger = logging.getLogger(__name__)
 def setup_logging():
     """Configure python logging to emit to stdout."""
 
+    log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(
-        level=logging.INFO,
+        level=log_level,
         # display isoformat time, log level, module, line number, message
         format="%(asctime)s - %(levelname)s - %(name)s:%(lineno)s - %(message)s",
         datefmt="%Y-%m-%dT%H:%M:%S%z",
@@ -45,26 +46,38 @@ def main():
     # initialize postgresql in temp folder
     # create database in temp folder for duration of run
     with temp_postgresql_db("."):
-        if args.sql_before_import:
-            run_sql_file(args.sql_before_import)
-
-        pg_restore(args.pgdump)
-
         try:
-            convert_hstore_to_jsonb()
-        except Exception:
-            logger.exception("something went wrong while fixing schemas")
+            if args.sql_before_import:
+                run_sql_file(args.sql_before_import)
 
-        # resolve path to absolute
-        dump_all_tables(os.path.abspath(args.output_directory))
+            pg_restore(args.pgdump)
 
-    logger.info("Done export")
-    if args.debug:
-        logger.info("Press CTRL+D or CTRL+C to close postgresql and exit")
-        while True:
-            l = sys.stdin.readline()
-            if not l:
-                break
+            try:
+                convert_hstore_to_jsonb()
+            except Exception:
+                logger.exception("something went wrong while fixing schemas")
+                raise
+
+            try:
+                add_json_column_for_yaml("nbuild_onecity", "activity_datas", "content")
+            except Exception:
+                logger.exception(
+                    "something went wrong while converting yaml to json column"
+                )
+                raise
+
+            # resolve path to absolute
+            dump_all_tables(os.path.abspath(args.output_directory))
+            logger.info("Done export")
+        finally:
+            if args.debug:
+                logger.info(
+                    "Waiting in debug mode, press CTRL+D or CTRL+C to close postgresql and exit"
+                )
+                while True:
+                    l = sys.stdin.readline()
+                    if not l:
+                        break
 
 
 if __name__ == "__main__":
