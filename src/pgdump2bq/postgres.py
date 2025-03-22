@@ -61,7 +61,7 @@ def temp_postgresql_db(path: str):
 
             logger.info("starting postgresql")
             server_process = run_command_async(
-                f"postgres -D {tempdir} -p {server_port}"
+                f"postgres -D {tempdir} -p {server_port} -c unix_socket_directories={tempdir}"
             )
 
             create_database()
