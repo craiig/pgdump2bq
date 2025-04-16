@@ -25,6 +25,4 @@ def run_command(cmd):
 def run_command_async(cmd):
     """Run command asynchronously, returning object that can be used to ctrl+c the process later"""
     logger.debug(f"Running command asynchronously: {cmd}")
-    return subprocess.Popen(
-        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
+    return subprocess.Popen(cmd, shell=True)
