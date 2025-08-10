@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import subprocess
 
@@ -28,3 +29,29 @@ def run_command_async(cmd):
     return subprocess.Popen(
         cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
+
+
+async def run_command_async_await(cmd):
+    """Run command asynchronously using asyncio, raise exception if process has error."""
+    logger.debug(f"Running async command: {cmd}")
+    try:
+        process = await asyncio.create_subprocess_shell(
+            cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        
+        if process.returncode != 0:
+            logger.error(f"Error running command: {cmd}, returncode: {process.returncode}")
+            logger.error(f"Stdout: {stdout.decode()}")
+            logger.error(f"Stderr: {stderr.decode()}")
+            raise subprocess.CalledProcessError(process.returncode, cmd, stdout, stderr)
+        
+        logger.debug(f"Stdout: {stdout.decode()}")
+        logger.debug(f"Stderr: {stderr.decode()}")
+        return process.returncode, stdout, stderr
+        
+    except Exception as e:
+        logger.exception(f"Error running async command: {cmd}")
+        raise

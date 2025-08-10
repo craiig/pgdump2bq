@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import logging
 import os
 import sys
@@ -22,7 +23,7 @@ def setup_logging():
     )
 
 
-def main():
+async def main_async():
     setup_logging()
     parser = argparse.ArgumentParser(description="Fixes a pgdump file for import")
     parser.add_argument(
@@ -38,6 +39,12 @@ def main():
         "--debug",
         action="store_true",
         help="Keep running to enable debugging by connecting to the postgresql database",
+    )
+    parser.add_argument(
+        "--max-concurrent-dumps",
+        type=int,
+        default=5,
+        help="Maximum number of concurrent table dumps (default: 5)",
     )
     args = parser.parse_args()
 
@@ -66,8 +73,8 @@ def main():
                 )
                 raise
 
-            # resolve path to absolute
-            dump_all_tables(os.path.abspath(args.output_directory))
+            # resolve path to absolute and run async dump
+            await dump_all_tables(os.path.abspath(args.output_directory), args.max_concurrent_dumps)
             logger.info("Done export")
         finally:
             if args.debug:
@@ -78,6 +85,10 @@ def main():
                     l = sys.stdin.readline()
                     if not l:
                         break
+
+
+def main():
+    asyncio.run(main_async())
 
 
 if __name__ == "__main__":
